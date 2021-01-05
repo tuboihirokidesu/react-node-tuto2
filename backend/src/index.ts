@@ -97,8 +97,9 @@ app.post('/register', async (req: Request, res: Response) => {
     if (!doc) {
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
       const newUser = new User({
-        username: req.body.username,
+        username,
         password: hashedPassword,
+        isAdmin: true,
       });
       await newUser.save();
       res.send('Success');
@@ -106,17 +107,60 @@ app.post('/register', async (req: Request, res: Response) => {
   });
 });
 
+const isAdministratorMiddleware = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const { user }: any = req;
+  if (user) {
+    User.findOne(
+      { username: user.username },
+      (err: Error, doc: DatabaseUserInterface) => {
+        if (err) throw err;
+        if (doc?.isAdmin) {
+          //管理者側で見れるリンクを識別化するのをバックエンド側で実装
+          next();
+        } else {
+          res.send("Sorry, only admin's can perform this.");
+        }
+      }
+    );
+  } else {
+    res.send("Sorry, you aren't logged in.");
+  }
+};
+
 //ローカル認証
 app.post(
   '/login',
   passport.authenticate('local'),
   (req: Request, res: Response) => {
-    res.send('Successfully');
+    res.send('success');
   }
 );
 
 app.get('/user', (req: Request, res: Response) => {
   res.send(req.user);
+});
+
+//passportによるログアウトの機能
+app.get('/logout', (req: Request, res: Response) => {
+  req.logout();
+  res.send('success'); //client側のNavBar.tsxのlogout関数内res.dataに格納される値。
+});
+
+app.post('/deleteuser', isAdministratorMiddleware, async (req, res) => {
+  const { id } = req?.body;
+  await User.findByIdAndDelete(id);
+  res.send('success');
+});
+
+app.get('/getallusers', isAdministratorMiddleware, async (req, res) => {
+  await User.find({}, (err: Error, data: UserInterface[]) => {
+    if (err) throw err;
+    res.send(data);
+  });
 });
 
 //アプリの起動
