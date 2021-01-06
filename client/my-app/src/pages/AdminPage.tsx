@@ -1,34 +1,34 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import React, { useState, useEffect, useContext } from 'react';
 import { myContext } from './Context';
+import { UserTypes } from '../Interface/Types';
 
 const AdminPage = () => {
   const ctx = useContext(myContext);
-  console.log(ctx);
 
-  const [data, setData] = useState<any>();
+  const [data, setData] = useState<UserTypes[]>();
   const [selectedUser, setSelectedUser] = useState<string>();
   useEffect(() => {
     axios
       .get('http://localhost:4000/getallusers', {
         withCredentials: true,
       })
-      .then((res: any) => {
+      .then((res: AxiosResponse) => {
         console.log(res.data);
 
         setData(
-          res.data.filter((item: any) => {
+          res.data.filter((item: UserTypes) => {
             return item.username !== ctx.username;
           })
         );
       });
-  }, []);
+  }, [ctx]);
 
   if (!data) {
     return null;
   }
   console.log(data);
-  let userId: any;
+  let userId: string;
   const deleteUser = () => {
     data.forEach((item: any) => {
       if (item.username === selectedUser) {
@@ -38,7 +38,7 @@ const AdminPage = () => {
     axios.post(
       'http://localhost:4000/deleteuser',
       {
-        id: userId,
+        id: userId!,
       },
       {
         withCredentials: true,
@@ -55,7 +55,7 @@ const AdminPage = () => {
         id="deleteuser"
       >
         <option id="Select a user">Select a User</option>
-        {data.map((item: any, i: number) => {
+        {data.map((item: UserTypes, i: number) => {
           return (
             <option key={i} id={item.username}>
               {item.username}

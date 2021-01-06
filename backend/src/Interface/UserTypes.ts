@@ -1,12 +1,12 @@
-export interface UserInterface {
+export type UserTypes = {
   username: string;
   isAdmin: boolean;
   id: string;
-}
+};
 
-export interface DatabaseUserInterface {
+export type DatabaseUserTypes = {
   username: string;
   password: string;
   isAdmin: boolean;
   _id: string;
-}
+};

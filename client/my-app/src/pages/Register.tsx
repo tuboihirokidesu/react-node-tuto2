@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import React, { useState } from 'react';
 
 const Register = () => {
@@ -16,7 +16,7 @@ const Register = () => {
           withCredentials: true,
         }
       )
-      .then((res) => {
+      .then((res: AxiosResponse) => {
         if (res.data === 'success') {
           window.location.href = '/login';
         }

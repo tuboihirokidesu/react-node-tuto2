@@ -8,15 +8,14 @@ import session from 'express-session';
 import bcrypt from 'bcryptjs';
 import User from './User';
 import dotenv from 'dotenv';
-import {
-  UserInterface,
-  DatabaseUserInterface,
-} from './interface/UserInterface';
+import { UserTypes, DatabaseUserTypes } from './interface/UserTypes';
 
 const LocalStrategy = passportLocal.Strategy;
 
+dotenv.config();
+
 mongoose.connect(
-  'mongodb+srv://hirokituboi:admin@cluster0.m8ogj.mongodb.net/<dbname>?retryWrites=true&w=majority',
+  `${process.env.PART1STRING}${process.env.USERNAME}:${process.env.PASSWORD}${process.env.PART2STRING}`,
   {
     useCreateIndex: true, //mongooseのデフフォルトインデックスの構築に活用する機能
     useNewUrlParser: true, //ユーザーが新しいパーサーにバグを見つけたとき古いパーサーに逆戻りする機能
@@ -48,7 +47,7 @@ passport.use(
   new LocalStrategy((username: string, password: string, done) => {
     User.findOne(
       { username: username },
-      (err: Error, user: DatabaseUserInterface) => {
+      (err: Error, user: DatabaseUserTypes) => {
         if (err) throw err;
         if (!user) return done(null, false);
         bcrypt.compare(password, user.password, (err, result: boolean) => {
@@ -64,13 +63,13 @@ passport.use(
   })
 );
 
-passport.serializeUser((user: any, cb) => {
+passport.serializeUser((user: DatabaseUserTypes, cb) => {
   cb(null, user._id);
 });
 
 passport.deserializeUser((id: string, cb) => {
-  User.findOne({ _id: id }, (err: Error, user: DatabaseUserInterface) => {
-    const userInformation: UserInterface = {
+  User.findOne({ _id: id }, (err: Error, user: DatabaseUserTypes) => {
+    const userInformation: UserTypes = {
       username: user.username,
       isAdmin: user.isAdmin,
       id: user._id,
@@ -81,7 +80,7 @@ passport.deserializeUser((id: string, cb) => {
 
 //Routes
 app.post('/register', async (req: Request, res: Response) => {
-  const { username, password } = req?.body;
+  const { username, password } = req.body;
   if (
     !username ||
     !password ||
@@ -91,7 +90,7 @@ app.post('/register', async (req: Request, res: Response) => {
     res.send('Improper Values');
     return;
   }
-  User.findOne({ username }, async (err: Error, doc: UserInterface) => {
+  User.findOne({ username }, async (err: Error, doc: DatabaseUserTypes) => {
     if (err) throw err;
     if (doc) res.send('User Already Exist');
     if (!doc) {
@@ -99,10 +98,9 @@ app.post('/register', async (req: Request, res: Response) => {
       const newUser = new User({
         username,
         password: hashedPassword,
-        isAdmin: true,
       });
       await newUser.save();
-      res.send('Success');
+      res.send('success');
     }
   });
 });
@@ -116,7 +114,7 @@ const isAdministratorMiddleware = (
   if (user) {
     User.findOne(
       { username: user.username },
-      (err: Error, doc: DatabaseUserInterface) => {
+      (err: Error, doc: DatabaseUserTypes) => {
         if (err) throw err;
         if (doc?.isAdmin) {
           //管理者側で見れるリンクを識別化するのをバックエンド側で実装
@@ -156,10 +154,21 @@ app.post('/deleteuser', isAdministratorMiddleware, async (req, res) => {
   res.send('success');
 });
 
-app.get('/getallusers', isAdministratorMiddleware, async (req, res) => {
-  await User.find({}, (err: Error, data: UserInterface[]) => {
+app.get('/getallusers', isAdministratorMiddleware, async (_, res) => {
+  await User.find({}, (err: Error, data: DatabaseUserTypes[]) => {
     if (err) throw err;
-    res.send(data);
+    const filteredUsers: UserTypes[] = [];
+    data.forEach(({ _id, isAdmin, password, username }) => {
+      const userInformation = {
+        id: _id,
+        username,
+        isAdmin,
+        password,
+      };
+      filteredUsers.push(userInformation);
+    });
+
+    res.send(filteredUsers);
   });
 });
 
