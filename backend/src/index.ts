@@ -15,6 +15,7 @@ const LocalStrategy = passportLocal.Strategy;
 dotenv.config();
 
 mongoose.connect(
+  //六時間、一日、一週間という機関でサーバーとの接続が切れるのでmongodb(network access でIP address再生性する必要がある)
   `${process.env.PART1STRING}${process.env.USERNAME}:${process.env.PASSWORD}${process.env.PART2STRING}`,
   {
     useCreateIndex: true, //mongooseのデフフォルトインデックスの構築に活用する機能
